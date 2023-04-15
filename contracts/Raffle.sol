@@ -5,6 +5,8 @@ import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/KeeperCompatibleInterface.sol";
 
+import "hardhat/console.sol";
+
 error Raffle__NotEnoughEthEntered();
 error Raffle__TransferFailed();
 error Raffle__NotOpen();
@@ -45,17 +47,17 @@ contract Raffle is VRFConsumerBaseV2, KeeperCompatibleInterface {
     //----------------- Functions -------------------------
     constructor(
         address vrfCoordinatorV2, // contract
-        uint256 entranceFee,
-        bytes32 keyHash,
         uint64 subscriptionId,
-        uint32 callBackGasLimit,
-        uint256 interval
+        bytes32 gasLane, // keyHash
+        uint256 interval,
+        uint256 entranceFee,
+        uint32 callbackGasLimit
     ) VRFConsumerBaseV2(vrfCoordinatorV2) {
         i_entranceFee = entranceFee;
         i_vrfCoordinator = VRFCoordinatorV2Interface(vrfCoordinatorV2);
-        i_keyHash = keyHash;
+        i_keyHash = gasLane;
         i_subscriptionId = subscriptionId;
-        i_callBackGasLimit = callBackGasLimit;
+        i_callBackGasLimit = callbackGasLimit;
         s_raffleState = RaffleState.OPEN;
         s_lastTimeStamp = block.timestamp;
         i_interval = interval;
@@ -91,7 +93,7 @@ contract Raffle is VRFConsumerBaseV2, KeeperCompatibleInterface {
         upkeepNeeded = (isOpen && timePassed && hasPlayers && hasBalance);
     }
 
-    function performUpkeep(bytes calldata /* performData*/) external {
+    function performUpkeep(bytes calldata /* performData*/) external override {
         (bool upkeepNeeded, ) = checkUpkeep("");
         if (!upkeepNeeded) {
             revert Raffle__UpkeepNotNeeded(
@@ -128,7 +130,20 @@ contract Raffle is VRFConsumerBaseV2, KeeperCompatibleInterface {
         emit WinnerPicked(recentWinner);
     }
 
-    /* View/ Pure */
+    /** Getter Functions */
+
+    function getRaffleState() public view returns (RaffleState) {
+        return s_raffleState;
+    }
+
+    function getNumWords() public pure returns (uint256) {
+        return NUM_WORDS;
+    }
+
+    function getRequestConfirmations() public pure returns (uint256) {
+        return REQUEST_CONFIRMATIONS;
+    }
+
     function getRecentWinner() public view returns (address) {
         return s_recentWinner;
     }
@@ -137,11 +152,19 @@ contract Raffle is VRFConsumerBaseV2, KeeperCompatibleInterface {
         return s_players[index];
     }
 
-    function raffleState() public view returns (RaffleState) {
-        return s_raffleState;
+    function getLastTimeStamp() public view returns (uint256) {
+        return s_lastTimeStamp;
     }
 
-    function getNumWords() public pure returns (uint256) {
-        return NUM_WORDS;
+    function getInterval() public view returns (uint256) {
+        return i_interval;
+    }
+
+    function getEntranceFee() public view returns (uint256) {
+        return i_entranceFee;
+    }
+
+    function getNumberOfPlayers() public view returns (uint256) {
+        return s_players.length;
     }
 }
