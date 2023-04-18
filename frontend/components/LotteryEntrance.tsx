@@ -9,16 +9,18 @@ interface contractAddressesInterface {
 }
 
 export default function LotteryEntrance() {
-    const addresses: contractAddressesInterface = contractAddresses
     const { chainId: chainIdHex, isWeb3Enabled } = useMoralis()
+    const dispatch = useNotification()
+
+    const addresses: contractAddressesInterface = contractAddresses
     const chainId: string = parseInt(chainIdHex!).toString()
     const raffleAddress = chainId in addresses ? addresses[chainId][0] : null
+
     const [entranceFee, setEntranceFee] = useState("0")
     const [numPlayers, setNumPlayers] = useState("0")
     const [recentWinner, setRecentWinner] = useState("0")
 
-    const dispatch = useNotification()
-
+    /* Contract Calls */
     const {
         runContractFunction: enterRaffle,
         isLoading,
@@ -53,8 +55,8 @@ export default function LotteryEntrance() {
     })
 
     async function updateUI() {
-        const entranceFeeFromCall = ((await getEntranceFee()) as BigNumber).toString()
-        const numPlayersFromCall = ((await getNumberOfPlayers()) as BigNumber).toString()
+        const entranceFeeFromCall = ((await getEntranceFee()) as BigNumber)?.toString()
+        const numPlayersFromCall = ((await getNumberOfPlayers()) as BigNumber)?.toString()
         const recentWinnerFromCall = (await getRecentWinner()) as string
         setEntranceFee(entranceFeeFromCall)
         setNumPlayers(numPlayersFromCall)
@@ -94,6 +96,7 @@ export default function LotteryEntrance() {
                         onClick={async function () {
                             await enterRaffle({
                                 onSuccess: (tx) => handleSuccess(tx as ContractTransaction),
+                                onError: (error) => console.log(error),
                             })
                         }}
                         disabled={isLoading || isFetching}
@@ -104,7 +107,7 @@ export default function LotteryEntrance() {
                             <div>Enter Raffle</div>
                         )}
                     </button>
-                    <div>Entrance Fee: {ethers.utils.formatUnits(entranceFee, "ether")} ETH</div>
+                    <div>Entrance Fee: {ethers.utils.formatEther(entranceFee)} ETH</div>
                     <div>Number Of Players: {numPlayers} </div>
                     <div> Recent Winner: {recentWinner} </div>
                 </div>
